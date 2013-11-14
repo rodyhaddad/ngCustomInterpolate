@@ -1,0 +1,35 @@
+{
+  "name": "ngCustomInterpolate",
+  "version": "0.0.0",
+  "description": "allows the addition of custom syntax to be interpolated by angular",
+  "main": "build/ngCustomInterpolate.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rodyhaddad/ngCustomInterpolate.git"
+  },
+  "keywords": [
+    "angular",
+    "interpolate",
+    "syntax"
+  ],
+  "author": "rodyhaddad",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-watch": "~0.5.2",
+    "grunt-karma": "~0.6.1",
+    "grunt-contrib-uglify": "~0.2.5",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-jshint": "~0.7.1",
+
+    "karma": "~0.10.1",
+    "karma-chrome-launcher": "~0.1.0",
+    "karma-jasmine": "~0.1.0"
+  }
+}
