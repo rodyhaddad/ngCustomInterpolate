@@ -40,8 +40,11 @@
    </doc:example>
    */
   function $InterpolateProvider() {
-    var startSymbol = '{{';
-    var endSymbol = '}}';
+    var syntaxes = [];
+    syntaxes.$$byName = {};
+    var provider = this;
+
+    this.$$syntaxes = syntaxes;
 
     /**
      * @ngdoc method
@@ -53,13 +56,19 @@
      * @param {string=} value new value to set the starting symbol to.
      * @returns {string|self} Returns the symbol when used as getter and self if used as setter.
      */
-    this.startSymbol = function (value) {
+    this.startSymbol = function (name, value) {
       if (value) {
-        startSymbol = value;
-        return this;
+        syntaxes.$$byName[name].startSymbol(value);
+      } else if (name) {
+        if (syntaxes.$$byName[name]) {
+          return syntaxes.$$byName[name].startSymbol();
+        } else {
+          syntaxes.$$byName['default'].startSymbol(name);
+        }
       } else {
-        return startSymbol;
+        return syntaxes.$$byName['default'].startSymbol();
       }
+      return this;
     };
 
     /**
@@ -72,19 +81,104 @@
      * @param {string=} value new value to set the ending symbol to.
      * @returns {string|self} Returns the symbol when used as getter and self if used as setter.
      */
-    this.endSymbol = function (value) {
+    this.endSymbol = function (name, value) {
       if (value) {
-        endSymbol = value;
-        return this;
+        syntaxes.$$byName[name].endSymbol(value);
+      } else if (name) {
+        if (syntaxes.$$byName[name]) {
+          return syntaxes.$$byName[name].endSymbol();
+        } else {
+          syntaxes.$$byName['default'].endSymbol(name);
+        }
       } else {
-        return endSymbol;
+        return syntaxes.$$byName['default'].endSymbol();
       }
+      return this;
     };
 
+    // TODO docs
+    this.registerSyntax = function (name, startSymbol, endSymbol, fn) {
+      var info,
+        startSymbolLength = startSymbol.length,
+        endSymbolLength = endSymbol.length;
+
+      info = {
+        name: name,
+        fn: fn,
+        startSymbol: function (value) {
+          if (value) {
+            startSymbol = value;
+            startSymbolLength = value.length;
+            return this;
+          } else {
+            return startSymbol;
+          }
+        },
+        endSymbol: function (value) {
+          if (value) {
+            endSymbol = value;
+            endSymbolLength = value.length;
+            return this;
+          } else {
+            return endSymbol;
+          }
+        },
+        handle: function (parts, text) {
+          var exp, startIndex, endIndex, fn,
+            hasInterpolation = false,
+            index = 0,
+            length = text.length;
+
+          while (index < length) {
+            if (((startIndex = text.indexOf(startSymbol, index)) != -1) &&
+              ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) != -1)) {
+              (index != startIndex) && info.next(parts, text.substring(index, startIndex));
+              parts.push(fn = info.fn(exp = text.substring(startIndex + startSymbolLength, endIndex)));
+              fn.exp = exp;
+              index = endIndex + endSymbolLength;
+              hasInterpolation = true;
+            } else {
+              // we did not find anything, so we have to add the remainder to the parts array
+              if (index != length) {
+                hasInterpolation = info.next(parts, text.substring(index));
+              }
+              index = length;
+            }
+          }
+
+          return hasInterpolation;
+        },
+        next: function (parts, text) {
+          var index = indexOf(syntaxes, info);
+          if (index != -1 && syntaxes[index + 1]) {
+            return syntaxes[index + 1].handle(parts, text);
+          } else {
+            parts.push(text);
+            return false;
+          }
+        }
+      };
+
+      syntaxes.$$byName[name] = info;
+
+      for(var i = 0; i < syntaxes.length; i++) {
+        var syntax = syntaxes[i];
+        if (startSymbol.indexOf(syntax.startSymbol()) != -1) {
+          syntaxes.splice(i, 0, info);
+          break;
+        }
+      }
+      if (i === syntaxes.length) {
+        syntaxes.push(info);
+      }
+
+      return this;
+    };
+
+    provider.registerSyntax('default', '{{', '}}', angular.noop);
 
     this.$get = ['$parse', '$exceptionHandler', '$sce', function ($parse, $exceptionHandler, $sce) {
-      var startSymbolLength = startSymbol.length,
-        endSymbolLength = endSymbol.length;
+      syntaxes.$$byName['default'].fn = $parse;
 
       /**
        * @ngdoc function
@@ -125,30 +219,13 @@
        *
        */
       function $interpolate(text, mustHaveExpression, trustedContext) {
-        var startIndex,
-          endIndex,
-          index = 0,
-          parts = [],
+        var parts = [],
           length = text.length,
-          hasInterpolation = false,
+          hasInterpolation,
           fn,
-          exp,
           concat = [];
 
-        while (index < length) {
-          if (((startIndex = text.indexOf(startSymbol, index)) != -1) &&
-            ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) != -1)) {
-            (index != startIndex) && parts.push(text.substring(index, startIndex));
-            parts.push(fn = $parse(exp = text.substring(startIndex + startSymbolLength, endIndex)));
-            fn.exp = exp;
-            index = endIndex + endSymbolLength;
-            hasInterpolation = true;
-          } else {
-            // we did not find anything, so we have to add the remainder to the parts array
-            (index != length) && parts.push(text.substring(index));
-            index = length;
-          }
-        }
+        hasInterpolation = syntaxes[0].handle(parts, text);
 
         if (!(length = parts.length)) {
           // we added, nothing, must have been an empty string.
@@ -216,8 +293,11 @@
        *
        * @returns {string} start symbol.
        */
-      $interpolate.startSymbol = function () {
-        return startSymbol;
+      $interpolate.startSymbol = function (name) {
+        if (!name) name = 'default';
+        return syntaxes.$$byName[name] ?
+          syntaxes.$$byName[name].startSymbol() :
+          null;
       };
 
 
@@ -233,8 +313,11 @@
        *
        * @returns {string} start symbol.
        */
-      $interpolate.endSymbol = function () {
-        return endSymbol;
+      $interpolate.endSymbol = function (name) {
+        if (!name) name = 'default';
+        return syntaxes.$$byName[name] ?
+          syntaxes.$$byName[name].endSymbol() :
+          null;
       };
 
       return $interpolate;
@@ -283,6 +366,15 @@
     }
 
     return new Error(message);
+  }
+
+  function indexOf(array, obj) {
+    if (array.indexOf) return array.indexOf(obj);
+
+    for (var i = 0; i < array.length; i++) {
+      if (obj === array[i]) return i;
+    }
+    return -1;
   }
 
 }());
