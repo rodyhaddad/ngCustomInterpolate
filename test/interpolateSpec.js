@@ -22,20 +22,24 @@ describe('[with addition] $interpolate', function() {
     }
   }
 
+  function registerSyntax(name, startSymbol, endSymbol, parseFn) {
+    $iP.registerSyntax(name, startSymbol, endSymbol, valueFn(parseFn));
+  }
+
   describe('registerSyntax', function () {
     it('should interpolate with colliding symbols', function () {
-      $iP.registerSyntax('v2', '{{{{', '}}}}', valueFn(2))
-        .registerSyntax('v3', '{{{', '}}}', valueFn(3))
-        .registerSyntax('v4', '[[[', ']]]', valueFn(4))
-        .registerSyntax('v5', '[[', ']]', valueFn(5))
-        .registerSyntax('v6', '[[[[', ']]]]', valueFn(6));
+      registerSyntax('v2', '{{{{', '}}}}', valueFn(2));
+      registerSyntax('v3', '{{{', '}}}', valueFn(3));
+      registerSyntax('v4', '[[[', ']]]', valueFn(4));
+      registerSyntax('v5', '[[', ']]', valueFn(5));
+      registerSyntax('v6', '[[[[', ']]]]', valueFn(6));
 
       expect(iShort('{{a}}-{{{{a}}}}-{{{a}}}-[[[a]]]-[[a]]-[[[[a]]]]')).toBe("1-2-3-4-5-6");
     });
 
     it('should should pass the expression and then the context to the parserFn', function () {
       var expected = null, scope = {};
-      $iP.registerSyntax('variation', '[[', ']]', function (expr) {
+      registerSyntax('variation', '[[', ']]', function (expr) {
         expect(expr).toBe(expected);
         return function (context) {
           expect(context).toBe(scope);
@@ -50,8 +54,8 @@ describe('[with addition] $interpolate', function() {
     });
 
     it('should accept the registration of new syntaxes', function () {
-      $iP.registerSyntax('variation1', '[[', ']]', $parse)
-          .registerSyntax('variation2', '{[', ']}', $parse);
+      registerSyntax('variation1', '[[', ']]', $parse);
+      registerSyntax('variation2', '{[', ']}', $parse);
       expect(iShort('{{a}}-[[a]]-{[a]}')).toBe('1-1-1');
     });
 
@@ -78,7 +82,7 @@ describe('[with addition] $interpolate', function() {
     it('should allow custom symbol changes', function () {
       function expectTestOne(value) { expect(iShort('{[a]}')).toBe(value); }
       function expectTestTwo(value) { expect(iShort('[[a]]')).toBe(value); }
-      $iP.registerSyntax('variation', '{[', ']}', $parse);
+      registerSyntax('variation', '{[', ']}', $parse);
       expectTestOne('1');
 
       $iP.startSymbol('variation', '[[').endSymbol('variation', ']]');
@@ -103,7 +107,7 @@ describe('[with addition] $interpolate', function() {
     var retValue;
     beforeEach(function () {
       retValue = undefined;
-      $iP.registerSyntax('variation', '[[', ']]', function (expr) {
+      registerSyntax('variation', '[[', ']]', function (expr) {
         return function () {
           if (expr === "err") {
             throw new Error("oops");
@@ -173,7 +177,7 @@ describe('[with addition] $interpolate', function() {
     });
     beforeEach(function () {
       retValue = undefined;
-      $iP.registerSyntax('variation', '[[', ']]', function (expr) {
+      registerSyntax('variation', '[[', ']]', function (expr) {
         return function () {
           if (expr === "err") {
             throw new Error("oops");
@@ -232,7 +236,7 @@ describe('[with addition] $interpolate', function() {
 
   describe('parseBindings', function() {
     beforeEach(function () {
-      $iP.registerSyntax('variation', '[[', ']]', $parse);
+      registerSyntax('variation', '[[', ']]', $parse);
     });
 
     it('should Parse Text With No Bindings', inject(function($interpolate) {
@@ -301,7 +305,7 @@ describe('[with addition] $interpolate', function() {
     }));
 
     it('should have parseFn in the .parts array', function () {
-      $iP.registerSyntax('variation2', '{[', ']}', function (expr) {
+      registerSyntax('variation2', '{[', ']}', function (expr) {
         return angular.noop;
       });
 
@@ -312,7 +316,7 @@ describe('[with addition] $interpolate', function() {
 
   describe('isTrustedContext', function() {
     beforeEach(function () {
-      $iP.registerSyntax('variation', '[[', ']]', function (expr) {
+      registerSyntax('variation', '[[', ']]', function (expr) {
         return function () {
           if (expr === "err") {
             throw new Error("oops");
@@ -374,7 +378,7 @@ describe('[with addition] $interpolate', function() {
 
     describe('[custom]', function () {
       it('should be write/read using provider', function () {
-        $iP.registerSyntax('custom', '((', '))', angular.noop);
+        registerSyntax('custom', '((', '))', angular.noop);
         $iP.startSymbol('custom', '[[');
         expect($iP.startSymbol('custom')).toBe('[[');
 
@@ -383,7 +387,7 @@ describe('[with addition] $interpolate', function() {
       });
 
       it('should read from service', function () {
-        $iP.registerSyntax('custom', '((', '))', angular.noop);
+        registerSyntax('custom', '((', '))', angular.noop);
 
         expect($interpolate.startSymbol('custom')).toBe('((');
 
@@ -426,7 +430,7 @@ describe('[with addition] $interpolate', function() {
 
     describe('[custom]', function () {
       it('should be write/read using provider', function () {
-        $iP.registerSyntax('custom', '((', '))', angular.noop);
+        registerSyntax('custom', '((', '))', angular.noop);
         $iP.endSymbol('custom', ']]');
         expect($iP.endSymbol('custom')).toBe(']]');
 
@@ -435,7 +439,7 @@ describe('[with addition] $interpolate', function() {
       });
 
       it('should read from service', function () {
-        $iP.registerSyntax('custom', '((', '))', angular.noop);
+        registerSyntax('custom', '((', '))', angular.noop);
 
         expect($interpolate.endSymbol('custom')).toBe('))');
 

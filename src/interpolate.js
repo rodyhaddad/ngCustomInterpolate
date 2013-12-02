@@ -1,7 +1,7 @@
 !(function () {
   'use strict';
 
-  angular.module('rh.ngCustomInterpolate', []).provider('$interpolate', $InterpolateProvider);
+  angular.module('rh.ngCustomInterpolate', []).provider('$interpolate', ['$provide', $InterpolateProvider]);
 
   /**
    * @ngdoc object
@@ -39,12 +39,11 @@
    </doc:scenario>
    </doc:example>
    */
-  function $InterpolateProvider() {
+  function $InterpolateProvider($provide) {
+    var suffix = 'InterpolationSyntax';
     var syntaxes = [];
-    syntaxes.$$byName = {};
-    var provider = this;
-
     this.$$syntaxes = syntaxes;
+    var syntaxSymbols = {};
 
     /**
      * @ngdoc method
@@ -58,15 +57,15 @@
      */
     this.startSymbol = function (name, value) {
       if (value) {
-        syntaxes.$$byName[name].startSymbol(value);
+        syntaxSymbols[name].startSymbol(value);
       } else if (name) {
-        if (syntaxes.$$byName[name]) {
-          return syntaxes.$$byName[name].startSymbol();
+        if (syntaxSymbols[name]) {
+          return syntaxSymbols[name].startSymbol();
         } else {
-          syntaxes.$$byName['default'].startSymbol(name);
+          syntaxSymbols['default'].startSymbol(name);
         }
       } else {
-        return syntaxes.$$byName['default'].startSymbol();
+        return syntaxSymbols['default'].startSymbol();
       }
       return this;
     };
@@ -83,103 +82,116 @@
      */
     this.endSymbol = function (name, value) {
       if (value) {
-        syntaxes.$$byName[name].endSymbol(value);
+        syntaxSymbols[name].endSymbol(value);
       } else if (name) {
-        if (syntaxes.$$byName[name]) {
-          return syntaxes.$$byName[name].endSymbol();
+        if (syntaxSymbols[name]) {
+          return syntaxSymbols[name].endSymbol();
         } else {
-          syntaxes.$$byName['default'].endSymbol(name);
+          syntaxSymbols['default'].endSymbol(name);
         }
       } else {
-        return syntaxes.$$byName['default'].endSymbol();
+        return syntaxSymbols['default'].endSymbol();
       }
       return this;
     };
 
     // TODO docs
-    this.registerSyntax = function (name, startSymbol, endSymbol, fn) {
-      var info,
-        startSymbolLength = startSymbol.length,
-        endSymbolLength = endSymbol.length;
+    this.registerSyntax = function (name, startSymbol, endSymbol, parseFnFactory) {
 
-      info = {
-        name: name,
-        fn: fn,
-        startSymbol: function (value) {
-          if (value) {
-            startSymbol = value;
-            startSymbolLength = value.length;
-            return this;
-          } else {
-            return startSymbol;
-          }
-        },
-        endSymbol: function (value) {
-          if (value) {
-            endSymbol = value;
-            endSymbolLength = value.length;
-            return this;
-          } else {
-            return endSymbol;
-          }
-        },
-        handle: function (parts, text) {
-          var exp, startIndex, endIndex, fn,
-            hasInterpolation = false,
-            index = 0,
-            length = text.length;
-
-          while (index < length) {
-            if (((startIndex = text.indexOf(startSymbol, index)) != -1) &&
-              ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) != -1)) {
-              (index != startIndex) && info.next(parts, text.substring(index, startIndex));
-              parts.push(fn = info.fn(exp = text.substring(startIndex + startSymbolLength, endIndex)));
-              fn.exp = exp;
-              index = endIndex + endSymbolLength;
-              hasInterpolation = true;
-            } else {
-              // we did not find anything, so we have to add the remainder to the parts array
-              if (index != length) {
-                hasInterpolation = info.next(parts, text.substring(index));
-              }
-              index = length;
-            }
-          }
-
-          return hasInterpolation;
-        },
-        next: function (parts, text) {
-          var index = indexOf(syntaxes, info);
-          if (index != -1 && syntaxes[index + 1]) {
-            return syntaxes[index + 1].handle(parts, text);
-          } else {
-            parts.push(text);
-            return false;
-          }
+      function startSymbolFn(value) {
+        if (value) {
+          startSymbol = value;
+          return this;
+        } else {
+          return startSymbol;
         }
+      }
+
+      function endSymbolFn(value) {
+        if (value) {
+          endSymbol = value;
+          return this;
+        } else {
+          return endSymbol;
+        }
+      }
+
+      syntaxSymbols[name] = {
+        startSymbol: startSymbolFn,
+        endSymbol: endSymbolFn
       };
 
-      syntaxes.$$byName[name] = info;
+      $provide.factory(name + suffix, ['$injector', '$exceptionHandler',
+        function ($injector, $exceptionHandler) {
+          var parseFn,
+            startSymbolLength = startSymbol.length,
+            endSymbolLength = endSymbol.length;
+          try {
+            parseFn = $injector.invoke(parseFnFactory);
+          } catch (e) {
+            $exceptionHandler(e);
+          }
+          return {
+            name: name,
+            fn: parseFn,
+            startSymbol: startSymbolFn,
+            endSymbol: endSymbolFn,
+            handle: function (parts, text) {
+              var exp, startIndex, endIndex, fn,
+                hasInterpolation = false,
+                index = 0,
+                length = text.length;
+
+              while (index < length) {
+                if (((startIndex = text.indexOf(startSymbol, index)) != -1) &&
+                  ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) != -1)) {
+                  (index != startIndex) && this.next(parts, text.substring(index, startIndex));
+                  parts.push(fn = this.fn(exp = text.substring(startIndex + startSymbolLength, endIndex)));
+                  fn.exp = exp;
+                  index = endIndex + endSymbolLength;
+                  hasInterpolation = true;
+                } else {
+                  // we did not find anything, so we have to add the remainder to the parts array
+                  if (index != length) {
+                    hasInterpolation = this.next(parts, text.substring(index));
+                  }
+                  index = length;
+                }
+              }
+              return hasInterpolation;
+            },
+            next: function (parts, text) {
+              var index = indexOf(syntaxes, name);
+              if (index != -1 && syntaxes[index + 1]) {
+                return $injector.get(syntaxes[index + 1] + suffix).handle(parts, text);
+              } else {
+                parts.push(text);
+                return false;
+              }
+            }
+          };
+      }]);
+
 
       for(var i = 0; i < syntaxes.length; i++) {
-        var syntax = syntaxes[i];
+        var syntax = syntaxSymbols[syntaxes[i]];
         if (startSymbol.indexOf(syntax.startSymbol()) != -1) {
-          syntaxes.splice(i, 0, info);
+          syntaxes.splice(i, 0, name);
           break;
         }
       }
       if (i === syntaxes.length) {
-        syntaxes.push(info);
+        syntaxes.push(name);
       }
 
       return this;
     };
 
-    provider.registerSyntax('default', '{{', '}}', angular.noop);
+    this.registerSyntax('default', '{{', '}}', ['$parse', function ($parse) {
+      return $parse;
+    }]);
 
-    this.$get = ['$parse', '$exceptionHandler', '$sce', function ($parse, $exceptionHandler, $sce) {
-      syntaxes.$$byName['default'].fn = $parse;
-
+    this.$get = ['$exceptionHandler', '$sce', '$injector', function ($exceptionHandler, $sce, $injector) {
       /**
        * @ngdoc function
        * @name ng.$interpolate
@@ -225,7 +237,7 @@
           fn,
           concat = [];
 
-        hasInterpolation = syntaxes[0].handle(parts, text);
+        hasInterpolation = $injector.get(syntaxes[0] + suffix).handle(parts, text);
 
         if (!(length = parts.length)) {
           // we added, nothing, must have been an empty string.
@@ -295,8 +307,8 @@
        */
       $interpolate.startSymbol = function (name) {
         if (!name) name = 'default';
-        return syntaxes.$$byName[name] ?
-          syntaxes.$$byName[name].startSymbol() :
+        return syntaxSymbols[name] ?
+          syntaxSymbols[name].startSymbol() :
           null;
       };
 
@@ -315,8 +327,8 @@
        */
       $interpolate.endSymbol = function (name) {
         if (!name) name = 'default';
-        return syntaxes.$$byName[name] ?
-          syntaxes.$$byName[name].endSymbol() :
+        return syntaxSymbols[name] ?
+          syntaxSymbols[name].endSymbol() :
           null;
       };
 
