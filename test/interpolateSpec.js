@@ -1,19 +1,19 @@
 'use strict';
 
-describe('[with addition] $interpolate', function() {
+describe('[with addition] $interpolate', function () {
   var $interpolateProvider, $interpolate, $parse, $iP;
 
   beforeEach(module('rh.ngCustomInterpolate'));
-  beforeEach(module(function(_$interpolateProvider_) {
+  beforeEach(module(function (_$interpolateProvider_) {
     $iP = $interpolateProvider = _$interpolateProvider_;
   }));
-  beforeEach(inject(function(_$interpolate_, _$parse_) {
+  beforeEach(inject(function (_$interpolate_, _$parse_) {
     $interpolate = _$interpolate_;
     $parse = _$parse_;
   }));
 
   function iShort(string) {
-    return $interpolate(string)({a:1})
+    return $interpolate(string)({a: 1})
   }
 
   function valueFn(value) {
@@ -60,8 +60,14 @@ describe('[with addition] $interpolate', function() {
     });
 
     it('should allow default symbol changes', function () {
-      function expectTestOne(value) { expect(iShort('{[a]}')).toBe(value); }
-      function expectTestTwo(value) { expect(iShort('[[a]]')).toBe(value); }
+      function expectTestOne(value) {
+        expect(iShort('{[a]}')).toBe(value);
+      }
+
+      function expectTestTwo(value) {
+        expect(iShort('[[a]]')).toBe(value);
+      }
+
       expect(iShort('{{a}}')).toBe('1');
 
       $iP.startSymbol('[[').endSymbol(']]');
@@ -80,8 +86,14 @@ describe('[with addition] $interpolate', function() {
     });
 
     it('should allow custom symbol changes', function () {
-      function expectTestOne(value) { expect(iShort('{[a]}')).toBe(value); }
-      function expectTestTwo(value) { expect(iShort('[[a]]')).toBe(value); }
+      function expectTestOne(value) {
+        expect(iShort('{[a]}')).toBe(value);
+      }
+
+      function expectTestTwo(value) {
+        expect(iShort('[[a]]')).toBe(value);
+      }
+
       registerSyntax('variation', '{[', ']}', $parse);
       expectTestOne('1');
 
@@ -117,14 +129,14 @@ describe('[with addition] $interpolate', function() {
       });
     });
 
-    it('should suppress falsy objects', function() {
+    it('should suppress falsy objects', function () {
       retValue = undefined;
       expect($interpolate('[[retValue]]')()).toEqual('');
       retValue = null;
       expect($interpolate('[[retValue]]')()).toEqual('');
     });
 
-    it('should jsonify objects', function() {
+    it('should jsonify objects', function () {
       retValue = {};
       expect($interpolate('[[ retValue ]]')()).toEqual('{}');
       retValue = true;
@@ -133,13 +145,13 @@ describe('[with addition] $interpolate', function() {
       expect($interpolate('[[ retValue ]]')()).toEqual('false');
     });
 
-    it('should rethrow exceptions', function() {
+    it('should rethrow exceptions', function () {
       expect(function () {
         $interpolate('[[err]]')();
       }).toThrowMinErr("$interpolate", "interr", "Can't interpolate: [[err]]\nError: oops");
     });
 
-    it('should stop interpolation when encountering an exception', inject(function($interpolate, $compile, $rootScope) {
+    it('should stop interpolation when encountering an exception', inject(function ($interpolate, $compile, $rootScope) {
       retValue = 2;
       var dom = angular.element('<div>[[retValue]]</div><div>[[err]]</div><div>[[1 + 2]]</div>');
       $compile(dom)($rootScope);
@@ -156,24 +168,26 @@ describe('[with addition] $interpolate', function() {
   describe('mustHaveExpression', function () {
     it("should return a function even if there's nothing to interpolate and mustHaveExpression isn't specified",
       function () {
-      expect(typeof $interpolate('nothing')).toBe('function');
-    });
+        expect(typeof $interpolate('nothing')).toBe('function');
+      });
 
     it("shouldn't return a function if there's nothing to interpolate and mustHaveExpression is true",
       function () {
-      expect(typeof $interpolate('nothing', true)).toBe('undefined');
-    });
+        expect(typeof $interpolate('nothing', true)).toBe('undefined');
+      });
 
     it("shouldn't return a function if there's nothing to interpolate and mustHaveExpression is false",
       function () {
-      expect(typeof $interpolate('nothing', false)).toBe('function');
-    })
+        expect(typeof $interpolate('nothing', false)).toBe('function');
+      })
   });
 
-  describe('interpolating in a trusted context', function() {
+  describe('interpolating in a trusted context', function () {
     var sce, retValue;
-    beforeEach(function() {
-      inject(['$sce', function($sce) { sce = $sce; }]);
+    beforeEach(function () {
+      inject(['$sce', function ($sce) {
+        sce = $sce;
+      }]);
     });
     beforeEach(function () {
       retValue = undefined;
@@ -188,31 +202,31 @@ describe('[with addition] $interpolate', function() {
     });
 
     // the angular tests are weird here. Not following them here
-    it('should NOT interpolate non-trusted expressions', inject(function($interpolate) {
+    it('should NOT interpolate non-trusted expressions', inject(function ($interpolate) {
       retValue = 'foo';
       expect(function () {
         $interpolate('[[retValue]]', true, sce.CSS)();
       }).toThrowMinErr(
-        "$interpolate", "interr", "Can't interpolate: [[retValue]]\n" +
-          "Error: [$sce:unsafe] Attempting to use an unsafe value in a safe context");
+          "$interpolate", "interr", "Can't interpolate: [[retValue]]\n" +
+            "Error: [$sce:unsafe] Attempting to use an unsafe value in a safe context");
     }));
 
     // the angular tests are weird here. Not following them here
-    it('should NOT interpolate mistyped expressions', inject(function($interpolate) {
+    it('should NOT interpolate mistyped expressions', inject(function ($interpolate) {
       retValue = sce.trustAsCss("foo");
       expect(function () {
         return $interpolate('[[retValue]]', true, sce.HTML)();
       }).toThrowMinErr(
-        "$interpolate", "interr", "Can't interpolate: [[retValue]]\n" +
-          "Error: [$sce:unsafe] Attempting to use an unsafe value in a safe context");
+          "$interpolate", "interr", "Can't interpolate: [[retValue]]\n" +
+            "Error: [$sce:unsafe] Attempting to use an unsafe value in a safe context");
     }));
 
-    it('should interpolate trusted expressions in a regular context', inject(function($interpolate) {
+    it('should interpolate trusted expressions in a regular context', inject(function ($interpolate) {
       retValue = sce.trustAsCss("foo");
       expect($interpolate('[[retValue]]', true)()).toEqual('foo');
     }));
 
-    it('should interpolate trusted expressions in a specific trustedContext', inject(function($interpolate) {
+    it('should interpolate trusted expressions in a specific trustedContext', inject(function ($interpolate) {
       retValue = sce.trustAsCss("foo");
       expect($interpolate('[[retValue]]', true, sce.CSS)()).toEqual('foo');
     }));
@@ -220,10 +234,10 @@ describe('[with addition] $interpolate', function() {
     // The concatenation of trusted values does not necessarily result in a trusted value.  (For
     // instance, you can construct evil JS code by putting together pieces of JS strings that are by
     // themselves safe to execute in isolation.)
-    it('should NOT interpolate trusted expressions with multiple parts', inject(function($interpolate) {
+    it('should NOT interpolate trusted expressions with multiple parts', inject(function ($interpolate) {
       //retValue = sce.trustAsCss("foo");
       retValue = sce.trustAsCss("bar");
-      expect(function() {
+      expect(function () {
         return $interpolate('[[foo]][[bar]]', true, sce.CSS)();
       }).toThrowMinErr(
           "$interpolate", "noconcat", "Error while interpolating: [[foo]][[bar]]\n" +
@@ -234,61 +248,61 @@ describe('[with addition] $interpolate', function() {
   });
 
 
-  describe('parseBindings', function() {
+  describe('parseBindings', function () {
     beforeEach(function () {
       registerSyntax('variation', '[[', ']]', $parse);
     });
 
-    it('should Parse Text With No Bindings', inject(function($interpolate) {
+    it('should Parse Text With No Bindings', inject(function ($interpolate) {
       var parts = $interpolate("a").parts;
       expect(parts.length).toEqual(1);
       expect(parts[0]).toEqual("a");
     }));
 
-    it('should Parse Empty Text', inject(function($interpolate) {
+    it('should Parse Empty Text', inject(function ($interpolate) {
       var parts = $interpolate("").parts;
       expect(parts.length).toEqual(1);
       expect(parts[0]).toEqual("");
     }));
 
-    it('should Parse Inner Binding', inject(function($interpolate) {
+    it('should Parse Inner Binding', inject(function ($interpolate) {
       var parts = $interpolate("a[[b]]C").parts;
       expect(parts.length).toEqual(3);
       expect(parts[0]).toEqual("a");
       expect(parts[1].exp).toEqual("b");
-      expect(parts[1]({b:123})).toEqual(123);
+      expect(parts[1]({b: 123})).toEqual(123);
       expect(parts[2]).toEqual("C");
     }));
 
-    it('should Parse Ending Binding', inject(function($interpolate) {
+    it('should Parse Ending Binding', inject(function ($interpolate) {
       var parts = $interpolate("a[[b]]").parts;
       expect(parts.length).toEqual(2);
       expect(parts[0]).toEqual("a");
       expect(parts[1].exp).toEqual("b");
-      expect(parts[1]({b:123})).toEqual(123);
+      expect(parts[1]({b: 123})).toEqual(123);
     }));
 
-    it('should Parse Begging Binding', inject(function($interpolate) {
+    it('should Parse Begging Binding', inject(function ($interpolate) {
       var parts = $interpolate("[[b]]c").parts;
       expect(parts.length).toEqual(2);
       expect(parts[0].exp).toEqual("b");
       expect(parts[1]).toEqual("c");
     }));
 
-    it('should Parse Loan Binding', inject(function($interpolate) {
+    it('should Parse Loan Binding', inject(function ($interpolate) {
       var parts = $interpolate("[[b]]").parts;
       expect(parts.length).toEqual(1);
       expect(parts[0].exp).toEqual("b");
     }));
 
-    it('should Parse Two Bindings', inject(function($interpolate) {
+    it('should Parse Two Bindings', inject(function ($interpolate) {
       var parts = $interpolate("[[b]][[c]]").parts;
       expect(parts.length).toEqual(2);
       expect(parts[0].exp).toEqual("b");
       expect(parts[1].exp).toEqual("c");
     }));
 
-    it('should Parse Two Bindings With Text In Middle', inject(function($interpolate) {
+    it('should Parse Two Bindings With Text In Middle', inject(function ($interpolate) {
       var parts = $interpolate("[[b]]x[[c]]").parts;
       expect(parts.length).toEqual(3);
       expect(parts[0].exp).toEqual("b");
@@ -296,7 +310,7 @@ describe('[with addition] $interpolate', function() {
       expect(parts[2].exp).toEqual("c");
     }));
 
-    it('should Parse Multiline', inject(function($interpolate) {
+    it('should Parse Multiline', inject(function ($interpolate) {
       var parts = $interpolate('"X\nY[[A\n+B]]C\nD"').parts;
       expect(parts.length).toEqual(3);
       expect(parts[0]).toEqual('"X\nY');
@@ -314,7 +328,7 @@ describe('[with addition] $interpolate', function() {
     })
   });
 
-  describe('isTrustedContext', function() {
+  describe('isTrustedContext', function () {
     beforeEach(function () {
       registerSyntax('variation', '[[', ']]', function (expr) {
         return function () {
@@ -326,15 +340,15 @@ describe('[with addition] $interpolate', function() {
       });
     });
 
-    it('should NOT interpolate a multi-part expression when isTrustedContext is true', inject(function($interpolate) {
+    it('should NOT interpolate a multi-part expression when isTrustedContext is true', inject(function ($interpolate) {
       var isTrustedContext = true;
-      expect(function() {
+      expect(function () {
         $interpolate('constant/[[var]]', true, isTrustedContext);
       }).toThrowMinErr(
           "$interpolate", "noconcat", "Error while interpolating: constant/[[var]]\nStrict " +
             "Contextual Escaping disallows interpolations that concatenate multiple expressions " +
             "when a trusted value is required.  See http://docs.angularjs.org/api/ng.$sce");
-      expect(function() {
+      expect(function () {
         $interpolate('[[foo]]{{baz}}[[bar]]', true, isTrustedContext);
       }).toThrowMinErr(
           "$interpolate", "noconcat", "Error while interpolating: [[foo]]{{baz}}[[bar]]\nStrict " +
@@ -342,14 +356,14 @@ describe('[with addition] $interpolate', function() {
             "when a trusted value is required.  See http://docs.angularjs.org/api/ng.$sce");
     }));
 
-    it('should interpolate a multi-part expression when isTrustedContext is false', inject(function($interpolate) {
+    it('should interpolate a multi-part expression when isTrustedContext is false', inject(function ($interpolate) {
       expect($interpolate('some/[[id]]')()).toEqual('some/id');
       expect($interpolate('[[foo]]{{baz}}[[bar]]')({baz: 'baz'})).toEqual('foobazbar');
     }));
   });
 
 
-  describe('startSymbol', function() {
+  describe('startSymbol', function () {
 
     describe('[default]', function () {
       it('should be write/read using provider', function () {
@@ -402,7 +416,7 @@ describe('[with addition] $interpolate', function() {
 
   });
 
-  describe('endSymbol', function() {
+  describe('endSymbol', function () {
 
     describe('[default]', function () {
       it('should be write/read using provider', function () {

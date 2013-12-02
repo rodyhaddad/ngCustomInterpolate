@@ -170,10 +170,10 @@
               }
             }
           };
-      }]);
+        }]);
 
 
-      for(var i = 0; i < syntaxes.length; i++) {
+      for (var i = 0; i < syntaxes.length; i++) {
         var syntax = syntaxSymbols[syntaxes[i]];
         if (startSymbol.indexOf(syntax.startSymbol()) != -1) {
           syntaxes.splice(i, 0, name);
