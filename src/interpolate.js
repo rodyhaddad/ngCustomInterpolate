@@ -40,10 +40,10 @@
    </doc:example>
    */
   function $InterpolateProvider($provide) {
-    var suffix = 'InterpolationSyntax';
-    var syntaxes = [];
+    var Suffix = 'InterpolationSyntax',
+      syntaxes = [],
+      syntaxSymbols = {};
     this.$$syntaxes = syntaxes;
-    var syntaxSymbols = {};
 
     /**
      * @ngdoc method
@@ -121,7 +121,7 @@
         endSymbol: endSymbolFn
       };
 
-      $provide.factory(name + suffix, ['$injector', '$exceptionHandler',
+      $provide.factory(name + Suffix, ['$injector', '$exceptionHandler',
         function ($injector, $exceptionHandler) {
           var parseFn,
             startSymbolLength = startSymbol.length,
@@ -163,7 +163,7 @@
             next: function (parts, text) {
               var index = indexOf(syntaxes, name);
               if (index != -1 && syntaxes[index + 1]) {
-                return $injector.get(syntaxes[index + 1] + suffix).handle(parts, text);
+                return $injector.get(syntaxes[index + 1] + Suffix).handle(parts, text);
               } else {
                 parts.push(text);
                 return false;
@@ -237,7 +237,7 @@
           fn,
           concat = [];
 
-        hasInterpolation = $injector.get(syntaxes[0] + suffix).handle(parts, text);
+        hasInterpolation = $injector.get(syntaxes[0] + Suffix).handle(parts, text);
 
         if (!(length = parts.length)) {
           // we added, nothing, must have been an empty string.
