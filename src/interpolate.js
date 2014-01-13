@@ -16,34 +16,33 @@
    <doc:example module="customInterpolationApp">
    <doc:source>
    <script>
-   var customInterpolationApp = angular.module('customInterpolationApp', []);
+     var customInterpolationApp = angular.module('customInterpolationApp', []);
 
-   customInterpolationApp.config(function($interpolateProvider) {
-        $interpolateProvider.startSymbol('//');
-        $interpolateProvider.endSymbol('//');
-    });
+     customInterpolationApp.config(function($interpolateProvider) {
+       $interpolateProvider.startSymbol('//');
+       $interpolateProvider.endSymbol('//');
+     });
 
 
-   customInterpolationApp.controller('DemoController', function DemoController() {
-     this.label = "This binding is brought you by // interpolation symbols.";
-   });
+     customInterpolationApp.controller('DemoController', function DemoController() {
+       this.label = "This binding is brought you by // interpolation symbols.";
+     });
    </script>
    <div ng-app="App" ng-controller="DemoController as demo">
-   //demo.label//
+     //demo.label//
    </div>
    </doc:source>
    <doc:scenario>
-   it('should interpolate binding with custom symbols', function() {
-    expect(binding('demo.label')).toBe('This binding is brought you by // interpolation symbols.');
-   });
+     it('should interpolate binding with custom symbols', function() {
+       expect(binding('demo.label')).toBe('This binding is brought you by // interpolation symbols.');
+     });
    </doc:scenario>
    </doc:example>
    */
   function $InterpolateProvider($provide) {
     var Suffix = 'InterpolationSyntax',
-      syntaxes = [],
+      syntaxes = this.$$syntaxes = [],
       syntaxSymbols = {};
-    this.$$syntaxes = syntaxes;
 
     /**
      * @ngdoc method
@@ -52,6 +51,7 @@
      * @description
      * Symbol to denote start of expression in the interpolated string. Defaults to `{{`.
      *
+     * @param {string=} name syntax's name to set or get the start symbol for. Defaults to 'default'.
      * @param {string=} value new value to set the starting symbol to.
      * @returns {string|self} Returns the symbol when used as getter and self if used as setter.
      */
@@ -77,6 +77,7 @@
      * @description
      * Symbol to denote the end of expression in the interpolated string. Defaults to `}}`.
      *
+     * @param {string=} name syntax's name to set or get the end symbol for. Defaults to 'default'.
      * @param {string=} value new value to set the ending symbol to.
      * @returns {string|self} Returns the symbol when used as getter and self if used as setter.
      */
@@ -95,7 +96,48 @@
       return this;
     };
 
-    // TODO docs
+    /**
+     * @ngdoc method
+     * @name ng.$interpolateProvider#registerSyntax
+     * @methodOf ng.$interpolateProvider
+     * @description
+     * Symbol to denote the end of expression in the interpolated string. Defaults to `}}`.
+     *
+     * @example
+     <doc:example module="customInterpolationApp">
+     <doc:source>
+     <script>
+     var customInterpolationApp = angular.module('customInterpolationApp', ['rh.ngCustomInterpolate']);
+
+     customInterpolationApp.config(function($interpolateProvider) {
+       $interpolateProvider.registerSyntax('variation', '{%', '%}', function () {
+           // the parse fn, responsible for parsing anything between {% and %} in a template
+           function (expression) {
+             // will be watched by the appropriate $scope
+             return function (scope) {
+               return scope.$eval(expression, {demoText: 'This binding is brought you by ngCustomInterpolate.'})
+             }
+           }
+         });
+     });
+   </script>
+   <div ng-app="customInterpolationApp">
+     {% demoText %}
+   </div>
+   </doc:source>
+   <doc:scenario>
+     it('should interpolate binding with custom interpolation syntaxes', function() {
+       expect(binding('demoText')).toBe('This binding is brought you by ngCustomInterpolate.');
+     });
+   </doc:scenario>
+   </doc:example>
+     * @param {string} name the syntax's identifier, used by start/endSymbol methods.
+     * @param {string} startSymbol symbol to denote the start of the expression.
+     * @param {string} endSymbol symbol to denote the end of the expression.
+     * @param {function|Array} parseFnFactory An injectable parseFn factory function,
+     *    that needs to return the function responsible for parsing expressions
+     * @returns {string|self} Returns the symbol when used as getter and self if used as setter.
+     */
     this.registerSyntax = function (name, startSymbol, endSymbol, parseFnFactory) {
 
       function startSymbolFn(value) {
@@ -303,6 +345,7 @@
        * Use {@link ng.$interpolateProvider#startSymbol $interpolateProvider#startSymbol} to change
        * the symbol.
        *
+       * @param {string=} name syntax's name to get the start symbol for. Defaults to 'default'.
        * @returns {string} start symbol.
        */
       $interpolate.startSymbol = function (name) {
@@ -323,6 +366,7 @@
        * Use {@link ng.$interpolateProvider#endSymbol $interpolateProvider#endSymbol} to change
        * the symbol.
        *
+       * @param {string=} name syntax's name to get the end symbol for. Defaults to 'default'.
        * @returns {string} start symbol.
        */
       $interpolate.endSymbol = function (name) {
