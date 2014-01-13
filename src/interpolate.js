@@ -175,7 +175,7 @@
           }
           return {
             name: name,
-            fn: parseFn,
+            parseFn: parseFn,
             startSymbol: startSymbolFn,
             endSymbol: endSymbolFn,
             handle: function (parts, text) {
@@ -188,14 +188,14 @@
                 if (((startIndex = text.indexOf(startSymbol, index)) != -1) &&
                   ((endIndex = text.indexOf(endSymbol, startIndex + startSymbolLength)) != -1)) {
                   (index != startIndex) && this.next(parts, text.substring(index, startIndex));
-                  parts.push(fn = this.fn(exp = text.substring(startIndex + startSymbolLength, endIndex)));
+                  parts.push(fn = this.parseFn(exp = text.substring(startIndex + startSymbolLength, endIndex)));
                   fn.exp = exp;
                   index = endIndex + endSymbolLength;
                   hasInterpolation = true;
                 } else {
                   // we did not find anything, so we have to add the remainder to the parts array
                   if (index != length) {
-                    hasInterpolation = this.next(parts, text.substring(index));
+                    hasInterpolation = this.next(parts, text.substring(index)) || hasInterpolation;
                   }
                   index = length;
                 }
