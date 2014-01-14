@@ -1,6 +1,6 @@
 {
   "name": "ngCustomInterpolate",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "allows the addition of custom syntax to be interpolated by angular",
   "main": "build/ngCustomInterpolate.js",
   "directories": {
